@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>Space Ship — Fixed Timestep</title>
+</head>
+
+<body>
+    <div id="app">
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="hud">
+            <div class="hud-title">
+                SPACE SHIP
+            </div>
+
+            <div>
+                Steps/s:
+                <span id="steps">0</span>
+            </div>
+
+            <div>
+                Frames/s:
+                <span id="frames">0</span>
+            </div>
+
+            <div>
+                Frame:
+                <span id="frameTime">0.00</span>
+                ms
+            </div>
+        </div>
+
+        <div class="controls">
+            W / ↑ — прискорення |
+            A / ← — поворот вліво |
+            D / → — поворот вправо
+        </div>
+    </div>
+
+    <script type="module"
+            src="/src/main.js"></script>
+</body>
+</html>
