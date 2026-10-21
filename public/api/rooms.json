@@ -1,0 +1,28 @@
+{
+  "rooms": [
+    {
+      "id": "easy",
+      "name": "Легка арена",
+      "players": 1,
+      "maxPlayers": 4,
+      "width": 800,
+      "height": 600
+    },
+    {
+      "id": "battle",
+      "name": "Космічна битва",
+      "players": 2,
+      "maxPlayers": 4,
+      "width": 1200,
+      "height": 800
+    },
+    {
+      "id": "asteroids",
+      "name": "Астероїдне поле",
+      "players": 0,
+      "maxPlayers": 2,
+      "width": 1000,
+      "height": 700
+    }
+  ]
+}

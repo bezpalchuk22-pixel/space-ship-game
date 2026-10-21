@@ -1,0 +1,43 @@
+{
+  "images": [
+    {
+      "id": "ship",
+      "url": "/assets/sprites/ship.svg",
+      "type": "image"
+    },
+    {
+      "id": "bullet",
+      "url": "/assets/sprites/bullet.svg",
+      "type": "image"
+    },
+    {
+      "id": "asteroid",
+      "url": "/assets/sprites/asteroid.svg",
+      "type": "image"
+    }
+  ],
+  "audio": [
+    {
+      "id": "fired",
+      "url": "/assets/audio/fired.wav",
+      "type": "audio"
+    },
+    {
+      "id": "hit",
+      "url": "/assets/audio/hit.wav",
+      "type": "audio"
+    },
+    {
+      "id": "exploded",
+      "url": "/assets/audio/exploded.wav",
+      "type": "audio"
+    }
+  ],
+  "json": [
+    {
+      "id": "rooms",
+      "url": "/api/rooms.json",
+      "type": "json"
+    }
+  ]
+}
