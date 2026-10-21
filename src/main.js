@@ -1,77 +1,113 @@
-import './style.css';
 
-import { createInput } from './input.js';
-import { integrate } from './physics.js';
-import { createRenderer } from './renderer.js';
-import { createLoop } from './gameLoop.js';
+import "./style.css";
 
-const canvas = document.querySelector('#gameCanvas');
+import { Vector2 } from "./entities/Vector2.js";
+import { Ship } from "./entities/Ship.js";
+import { World } from "./entities/World.js";
 
-const stepsElement = document.querySelector('#steps');
-const framesElement = document.querySelector('#frames');
-const frameTimeElement =
-    document.querySelector('#frameTime');
+const canvas = document.querySelector("#game");
+const ctx = canvas.getContext("2d");
+const scoreElement = document.querySelector("#score");
+const hpElement = document.querySelector("#hp");
+const entitiesElement = document.querySelector("#entities");
 
-const input = createInput();
-const renderer = createRenderer(canvas);
+const world = new World(window.innerWidth, window.innerHeight);
 
-const ship = {
-    x: renderer.getWidth() / 2,
-    y: renderer.getHeight() / 2,
+function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
 
-    previousX: renderer.getWidth() / 2,
-    previousY: renderer.getHeight() / 2,
+    world.width = window.innerWidth;
+    world.height = window.innerHeight;
 
-    angle: -Math.PI / 2,
-    previousAngle: -Math.PI / 2,
+    canvas.width = Math.floor(world.width * dpr);
+    canvas.height = Math.floor(world.height * dpr);
+    canvas.style.width = `${world.width}px`;
+    canvas.style.height = `${world.height}px`;
 
-    vx: 0,
-    vy: 0,
-
-    renderX: 0,
-    renderY: 0,
-    renderAngle: 0,
-
-    thrust: false,
-};
-
-function update(dt) {
-    ship.previousX = ship.x;
-    ship.previousY = ship.y;
-    ship.previousAngle = ship.angle;
-
-    const inputState = input.getState();
-
-    ship.thrust = inputState.forward;
-
-    integrate(
-        ship,
-        inputState,
-        dt,
-        renderer.getWidth(),
-        renderer.getHeight(),
-    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function render(alpha) {
-    renderer.render(ship, alpha);
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
 
-    const stats = gameLoop.getStats();
+world.spawn(
+    new Ship(new Vector2(world.width / 2, world.height / 2), true)
+);
 
-    stepsElement.textContent =
-        `${stats.stepsPerSecond}`;
-
-    framesElement.textContent =
-        `${stats.framesPerSecond}`;
-
-    frameTimeElement.textContent =
-        `${stats.frameTime.toFixed(2)} ms`;
+for (let i = 0; i < 7; i++) {
+    world.spawnAsteroid();
 }
 
-const gameLoop = createLoop({
-    update,
-    render,
-    fixedDt: 1 / 60,
+world.spawnPickup();
+
+const shipKeys = new Set([
+    "KeyW", "KeyA", "KeyS", "KeyD",
+    "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"
+]);
+
+window.addEventListener("keydown", (event) => {
+    if (shipKeys.has(event.code) || event.code === "Space") {
+        event.preventDefault();
+    }
+
+    const ship = world.player;
+    if (!ship || ship.dead) return;
+
+    ship.keys.add(event.code);
+
+    if (event.code === "Space" && !event.repeat) {
+        ship.fire(world);
+    }
+
+    if (event.code === "KeyH" && !event.repeat) {
+        ship.fire(world, true);
+    }
+
+    if (event.code === "KeyP" && !event.repeat) {
+        world.spawnPickup();
+    }
 });
 
-gameLoop.start();
+window.addEventListener("keyup", (event) => {
+    world.player?.keys.delete(event.code);
+});
+
+window.addEventListener("blur", () => {
+    world.player?.keys.clear();
+});
+
+let previousTime = 0;
+let accumulator = 0;
+
+const fixedStep = 1 / 60;
+const maxFrameTime = 0.1;
+
+function gameLoop(timestamp) {
+    if (previousTime === 0) previousTime = timestamp;
+
+    const frameTime = Math.min(
+        (timestamp - previousTime) / 1000,
+        maxFrameTime
+    );
+
+    previousTime = timestamp;
+    accumulator += frameTime;
+
+    while (accumulator >= fixedStep) {
+        world.step(fixedStep);
+        accumulator -= fixedStep;
+    }
+
+    ctx.clearRect(0, 0, world.width, world.height);
+    world.render(ctx);
+
+    scoreElement.textContent = String(world.score);
+    hpElement.textContent = world.player
+        ? String(world.player.hp)
+        : "Відродження...";
+    entitiesElement.textContent = String(world.entities.size);
+
+    requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);

@@ -1,48 +1,30 @@
+
 <!doctype html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8" />
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0" />
-
-    <title>Space Ship — Fixed Timestep</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Space Ship Game — лабораторна робота № 2</title>
 </head>
-
 <body>
-    <div id="app">
-        <canvas id="gameCanvas"></canvas>
+    <main id="app">
+        <header class="hud">
+            <div>Рахунок: <strong id="score">0</strong></div>
+            <div>Здоров'я: <strong id="hp">100</strong></div>
+            <div>Об'єктів: <strong id="entities">0</strong></div>
+        </header>
 
-        <div class="hud">
-            <div class="hud-title">
-                SPACE SHIP
-            </div>
+        <canvas id="game"></canvas>
 
-            <div>
-                Steps/s:
-                <span id="steps">0</span>
-            </div>
+        <section class="help">
+            <p><strong>Керування</strong></p>
+            <p>WASD або стрілки — рух</p>
+            <p>Space — стрільба</p>
+            <p>H — самонавідна куля</p>
+            <p>P — створити аптечку</p>
+        </section>
+    </main>
 
-            <div>
-                Frames/s:
-                <span id="frames">0</span>
-            </div>
-
-            <div>
-                Frame:
-                <span id="frameTime">0.00</span>
-                ms
-            </div>
-        </div>
-
-        <div class="controls">
-            W / ↑ — прискорення |
-            A / ← — поворот вліво |
-            D / → — поворот вправо
-        </div>
-    </div>
-
-    <script type="module"
-            src="/src/main.js"></script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
