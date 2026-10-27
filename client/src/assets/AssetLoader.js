@@ -173,10 +173,23 @@ export async function loadAll(manifest, {
     const failures = results.filter(result => result.status === "rejected");
 
     if (failures.length > 0) {
+        console.error("Не вдалося завантажити такі ресурси:");
+
+        for (const item of failures) {
+            console.error(
+                `URL: ${item.resource.url}`,
+                "| Тип:",
+                item.resource.type,
+                "| Причина:",
+                item.reason
+            );
+        }
+
         const error = new Error(
             `Не вдалося завантажити ресурси: ${failures.map(item => item.resource.url).join(", ")
             }`
         );
+
         error.failures = failures;
         error.loaded = loaded;
         throw error;

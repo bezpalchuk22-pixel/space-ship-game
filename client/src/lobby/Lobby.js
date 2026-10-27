@@ -1,7 +1,7 @@
 
 export class Lobby extends EventTarget {
     constructor({
-        roomsUrl = "/api/rooms.json",
+        roomsUrl = "/api/rooms",
         refreshInterval = 5000
     } = {}) {
         super();
