@@ -22,14 +22,18 @@ export class LobbyUI {
                     autocomplete="nickname"
                 />
 
+                <label for="lobby-protocol">Мережевий протокол</label>
+                <select id="lobby-protocol">
+                    <option value="binary" selected>Binary</option>
+                    <option value="json">JSON</option>
+                </select>
+
                 <label for="lobby-rooms">Оберіть кімнату</label>
                 <select id="lobby-rooms">
                     <option value="">Завантаження кімнат...</option>
                 </select>
 
-                <label for="lobby-room-name">
-                    Назва нової кімнати
-                </label>
+                <label for="lobby-room-name">Назва нової кімнати</label>
                 <input
                     id="lobby-room-name"
                     type="text"
@@ -41,37 +45,23 @@ export class LobbyUI {
                     Створити кімнату
                 </button>
 
-                <p
-                    class="lobby__status"
-                    role="status"
-                    aria-live="polite"
-                >
+                <p class="lobby__status" role="status" aria-live="polite">
                     Завантаження списку кімнат...
                 </p>
 
                 <button type="button" id="lobby-join" disabled>
-                    Join
+                    Приєднатися до гри
                 </button>
             </div>
         `;
 
-        this.nameInput =
-            this.element.querySelector("#lobby-player-name");
-
-        this.roomsSelect =
-            this.element.querySelector("#lobby-rooms");
-
-        this.roomNameInput =
-            this.element.querySelector("#lobby-room-name");
-
-        this.createButton =
-            this.element.querySelector("#lobby-create");
-
-        this.status =
-            this.element.querySelector(".lobby__status");
-
-        this.joinButton =
-            this.element.querySelector("#lobby-join");
+        this.nameInput = this.element.querySelector("#lobby-player-name");
+        this.protocolSelect = this.element.querySelector("#lobby-protocol");
+        this.roomsSelect = this.element.querySelector("#lobby-rooms");
+        this.roomNameInput = this.element.querySelector("#lobby-room-name");
+        this.createButton = this.element.querySelector("#lobby-create");
+        this.status = this.element.querySelector(".lobby__status");
+        this.joinButton = this.element.querySelector("#lobby-join");
 
         this.onRoomsUpdated = event => {
             this.renderRooms(event.detail.rooms);
@@ -80,7 +70,6 @@ export class LobbyUI {
         this.onRoomsError = event => {
             this.status.textContent =
                 `Не вдалося завантажити кімнати: ${event.detail.message}`;
-
             this.addRetryOption();
         };
 
@@ -110,8 +99,7 @@ export class LobbyUI {
             const name = this.roomNameInput.value.trim();
 
             if (!name) {
-                this.status.textContent =
-                    "Введіть назву кімнати.";
+                this.status.textContent = "Введіть назву кімнати.";
                 this.roomNameInput.focus();
                 return;
             }
@@ -130,24 +118,18 @@ export class LobbyUI {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(
-                        data.error || `HTTP ${response.status}`
-                    );
+                    throw new Error(data.error || `HTTP ${response.status}`);
                 }
 
                 if (!data.room || data.room.id === undefined) {
-                    throw new Error(
-                        "Сервер повернув некоректні дані кімнати."
-                    );
+                    throw new Error("Сервер повернув некоректні дані кімнати.");
                 }
 
                 this.roomNameInput.value = "";
-
-                // Оновлюємо список кімнат із сервера.
                 await this.lobby.refreshRooms();
 
-                // Вибираємо щойно створену кімнату.
                 const createdRoomId = String(data.room.id);
+
                 const roomExists = this.lobby.rooms.some(
                     room => String(room.id) === createdRoomId
                 );
@@ -158,7 +140,6 @@ export class LobbyUI {
                 }
 
                 this.updateJoinButton();
-
                 this.status.textContent =
                     `Кімнату «${data.room.name}» створено.`;
             } catch (error) {
@@ -173,42 +154,15 @@ export class LobbyUI {
             this.updateJoinButton();
         };
 
-        this.lobby.addEventListener(
-            "roomsUpdated",
-            this.onRoomsUpdated
-        );
-
-        this.lobby.addEventListener(
-            "roomsError",
-            this.onRoomsError
-        );
-
-        this.lobby.addEventListener(
-            "lobbyError",
-            this.onLobbyError
-        );
-
+        this.lobby.addEventListener("roomsUpdated", this.onRoomsUpdated);
+        this.lobby.addEventListener("roomsError", this.onRoomsError);
+        this.lobby.addEventListener("lobbyError", this.onLobbyError);
         this.lobby.addEventListener("join", this.onJoin);
 
-        this.roomsSelect.addEventListener(
-            "change",
-            this.onSelectionChange
-        );
-
-        this.nameInput.addEventListener(
-            "input",
-            this.onNameInput
-        );
-
-        this.joinButton.addEventListener(
-            "click",
-            this.onJoinClick
-        );
-
-        this.createButton.addEventListener(
-            "click",
-            this.onCreateClick
-        );
+        this.roomsSelect.addEventListener("change", this.onSelectionChange);
+        this.nameInput.addEventListener("input", this.onNameInput);
+        this.joinButton.addEventListener("click", this.onJoinClick);
+        this.createButton.addEventListener("click", this.onCreateClick);
 
         this.root.appendChild(this.element);
     }
@@ -228,7 +182,6 @@ export class LobbyUI {
 
         for (const room of rooms) {
             const option = document.createElement("option");
-
             option.value = String(room.id);
             option.textContent =
                 `${room.name} — ${room.players}/${room.maxPlayers} гравців`;
@@ -240,17 +193,10 @@ export class LobbyUI {
             room => String(room.id) === previousValue
         );
 
-        if (stillExists) {
-            this.roomsSelect.value = previousValue;
-        } else {
-            this.roomsSelect.value = "";
-        }
-
+        this.roomsSelect.value = stillExists ? previousValue : "";
         this.selectedRoomId = this.roomsSelect.value;
 
-        this.status.textContent =
-            `Доступно кімнат: ${rooms.length}`;
-
+        this.status.textContent = `Доступно кімнат: ${rooms.length}`;
         this.updateJoinButton();
     }
 
@@ -282,42 +228,15 @@ export class LobbyUI {
     }
 
     destroy() {
-        this.lobby.removeEventListener(
-            "roomsUpdated",
-            this.onRoomsUpdated
-        );
-
-        this.lobby.removeEventListener(
-            "roomsError",
-            this.onRoomsError
-        );
-
-        this.lobby.removeEventListener(
-            "lobbyError",
-            this.onLobbyError
-        );
-
+        this.lobby.removeEventListener("roomsUpdated", this.onRoomsUpdated);
+        this.lobby.removeEventListener("roomsError", this.onRoomsError);
+        this.lobby.removeEventListener("lobbyError", this.onLobbyError);
         this.lobby.removeEventListener("join", this.onJoin);
 
-        this.roomsSelect.removeEventListener(
-            "change",
-            this.onSelectionChange
-        );
-
-        this.nameInput.removeEventListener(
-            "input",
-            this.onNameInput
-        );
-
-        this.joinButton.removeEventListener(
-            "click",
-            this.onJoinClick
-        );
-
-        this.createButton.removeEventListener(
-            "click",
-            this.onCreateClick
-        );
+        this.roomsSelect.removeEventListener("change", this.onSelectionChange);
+        this.nameInput.removeEventListener("input", this.onNameInput);
+        this.joinButton.removeEventListener("click", this.onJoinClick);
+        this.createButton.removeEventListener("click", this.onCreateClick);
 
         this.element.remove();
     }
