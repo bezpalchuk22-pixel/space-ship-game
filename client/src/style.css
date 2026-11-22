@@ -190,3 +190,68 @@ body {
     color: white;
     cursor: pointer;
 }
+
+/* Network emulator */
+.network-emulator {
+    position: absolute;
+    z-index: 5;
+    top: 65px;
+    right: 14px;
+    width: 260px;
+    padding: 16px;
+    border: 1px solid #34435b;
+    border-radius: 12px;
+    background: rgba(8, 13, 25, 0.92);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    color: #e8f0ff;
+}
+
+    .network-emulator h3 {
+        margin: 0 0 14px;
+        color: #65e6ff;
+        font-size: 16px;
+    }
+
+    .network-emulator label {
+        display: block;
+        margin: 12px 0;
+        font-size: 13px;
+    }
+
+    .network-emulator strong {
+        float: right;
+        color: #65e6ff;
+    }
+
+    .network-emulator input[type="range"] {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        accent-color: #38bdf8;
+        cursor: pointer;
+    }
+
+    .network-emulator button {
+        width: 100%;
+        margin-top: 8px;
+        padding: 9px;
+        border: 1px solid #38bdf8;
+        border-radius: 7px;
+        background: #0c2940;
+        color: #e8f0ff;
+        cursor: pointer;
+    }
+
+        .network-emulator button:hover {
+            background: #164568;
+        }
+
+@media (max-width: 600px) {
+    .network-emulator {
+        top: auto;
+        right: 8px;
+        bottom: 55px;
+        width: 220px;
+        padding: 10px;
+    }
+}
