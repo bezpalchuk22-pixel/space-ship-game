@@ -22,7 +22,8 @@ export default defineConfig({
         }
     ],
     webServer: {
-        command: "npm run build && npm start",
+        command: "npm run build && npm run build:server && npm start",
+
         url: "http://127.0.0.1:3101/health",
         env: {
             PORT: "3101",
