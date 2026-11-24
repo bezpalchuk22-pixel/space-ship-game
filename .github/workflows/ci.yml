@@ -42,5 +42,8 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Server build
+        run: npm run build:server
+
       - name: End-to-end tests
         run: npm run test:e2e
