@@ -1,0 +1,257 @@
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100%;
+    overflow: hidden;
+    background: #080d19;
+    color: #e8f0ff;
+    font-family: Arial, sans-serif;
+}
+
+#app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#game {
+    display: block;
+    background: radial-gradient(circle at 20% 25%, #18233a 0, transparent 28%), radial-gradient(circle at 75% 70%, #111e31 0, transparent 32%), #080d19;
+}
+
+.hud {
+    position: absolute;
+    z-index: 2;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    pointer-events: none;
+    font-size: 14px;
+}
+
+    .hud strong {
+        color: #65e6ff;
+    }
+
+.help {
+    position: absolute;
+    z-index: 2;
+    right: 14px;
+    bottom: 14px;
+    max-width: 220px;
+    padding: 10px 14px;
+    border: 1px solid #34435b;
+    border-radius: 8px;
+    background: rgb(8 13 25 / 80%);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+    .help p {
+        margin: 4px 0;
+    }
+
+.lobby {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: radial-gradient(circle at top, #172554, #020617 70%);
+    color: #e2e8f0;
+    font-family: Arial, sans-serif;
+}
+
+    .lobby[hidden] {
+        display: none;
+    }
+
+.lobby__panel {
+    width: min(100%, 420px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.96);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+    .lobby__panel h1 {
+        margin: 0;
+        text-align: center;
+        letter-spacing: 4px;
+        color: #7dd3fc;
+    }
+
+    .lobby__panel p {
+        margin: 0 0 8px;
+        text-align: center;
+    }
+
+    .lobby__panel label {
+        font-size: 14px;
+        color: #cbd5e1;
+    }
+
+    .lobby__panel input,
+    .lobby__panel select {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #475569;
+        border-radius: 8px;
+        background: #0f172a;
+        color: #f8fafc;
+    }
+
+    .lobby__panel button {
+        padding: 12px;
+        border: 0;
+        border-radius: 8px;
+        background: #0284c7;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+        .lobby__panel button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+
+.lobby__status {
+    min-height: 20px;
+    font-size: 13px;
+    color: #93c5fd;
+}
+
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(2, 6, 23, 0.94);
+    color: #e2e8f0;
+    font-family: Arial, sans-serif;
+}
+
+    .loading-screen[hidden] {
+        display: none;
+    }
+
+.loading-panel {
+    width: min(100%, 420px);
+    padding: 28px;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    background: #0f172a;
+    text-align: center;
+}
+
+.loading-track {
+    width: 100%;
+    height: 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #334155;
+}
+
+#loading-progress {
+    width: 0%;
+    height: 100%;
+    border-radius: inherit;
+    background: #38bdf8;
+    transition: width 180ms ease;
+}
+
+#loading-percent {
+    font-weight: bold;
+}
+
+#loading-retry {
+    padding: 10px 20px;
+    border: 0;
+    border-radius: 8px;
+    background: #0284c7;
+    color: white;
+    cursor: pointer;
+}
+
+/* Network emulator */
+.network-emulator {
+    position: absolute;
+    z-index: 5;
+    top: 65px;
+    right: 14px;
+    width: 260px;
+    padding: 16px;
+    border: 1px solid #34435b;
+    border-radius: 12px;
+    background: rgba(8, 13, 25, 0.92);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    color: #e8f0ff;
+}
+
+    .network-emulator h3 {
+        margin: 0 0 14px;
+        color: #65e6ff;
+        font-size: 16px;
+    }
+
+    .network-emulator label {
+        display: block;
+        margin: 12px 0;
+        font-size: 13px;
+    }
+
+    .network-emulator strong {
+        float: right;
+        color: #65e6ff;
+    }
+
+    .network-emulator input[type="range"] {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        accent-color: #38bdf8;
+        cursor: pointer;
+    }
+
+    .network-emulator button {
+        width: 100%;
+        margin-top: 8px;
+        padding: 9px;
+        border: 1px solid #38bdf8;
+        border-radius: 7px;
+        background: #0c2940;
+        color: #e8f0ff;
+        cursor: pointer;
+    }
+
+        .network-emulator button:hover {
+            background: #164568;
+        }
+
+@media (max-width: 600px) {
+    .network-emulator {
+        top: auto;
+        right: 8px;
+        bottom: 55px;
+        width: 220px;
+        padding: 10px;
+    }
+}

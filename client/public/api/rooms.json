@@ -1,0 +1,34 @@
+{
+  "rooms": [
+    {
+      "id": "room-1",
+      "name": "Космічна битва",
+      "players": 0,
+      "maxPlayers": 4
+    },
+    {
+      "id": "room-2",
+      "name": "Галактична арена",
+      "players": 0,
+      "maxPlayers": 4
+    },
+    {
+      "id": "room-3",
+      "name": "Орбіта перемоги",
+      "players": 0,
+      "maxPlayers": 4
+    },
+    {
+      "id": "room-4",
+      "name": "Зоряний флот",
+      "players": 0,
+      "maxPlayers": 4
+    },
+    {
+      "id": "room-5",
+      "name": "Туманність",
+      "players": 0,
+      "maxPlayers": 4
+    }
+  ]
+}

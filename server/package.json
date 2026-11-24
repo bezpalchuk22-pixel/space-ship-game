@@ -1,0 +1,13 @@
+{
+  "name": "@space-ship/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node ../dist/server/src/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
