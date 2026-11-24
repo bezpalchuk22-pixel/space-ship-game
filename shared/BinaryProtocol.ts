@@ -1,7 +1,6 @@
 
 import type {
     GameSnapshot,
-    PlayerId,
     Tick,
     SequenceNumber,
     PlayerSnapshot,

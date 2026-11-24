@@ -50,17 +50,7 @@ interface PongMessage extends NetworkMessage {
     readonly id: number;
 }
 
-interface NetworkGameEventMap {
-    open: Event;
-    close: Event;
-    networkError: CustomEvent<{ readonly message: string }>;
-    joined: CustomEvent<JoinedMessage>;
-    snapshot: CustomEvent<GameSnapshot>;
-    networkStats: CustomEvent<NetworkStats>;
-    error: CustomEvent<NetworkMessage>;
-    chat: CustomEvent<NetworkMessage>;
-    system: CustomEvent<NetworkMessage>;
-}
+
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return (

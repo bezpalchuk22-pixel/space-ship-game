@@ -1,4 +1,4 @@
-
+import { allowMessage } from "./rateLimit.js";
 import { GameSimulation } from "./game/GameSimulation.js";
 import { WebSocketServer, WebSocket } from "ws";
 import type { RawData } from "ws";
@@ -264,19 +264,15 @@ export function attachWebSocket(
 
                 const now = Date.now();
 
-                client.messageTimes = client.messageTimes.filter(
-                    time => now - time < 1000
-                );
-
-                if (
-                    client.messageTimes.length >=
-                    MAX_MESSAGES_PER_SECOND
-                ) {
+                if (!allowMessage(
+                    client.messageTimes,
+                    now,
+                    MAX_MESSAGES_PER_SECOND,
+                    1000
+                )) {
                     socket.close(4008, "Rate limit exceeded");
                     return;
                 }
-
-                client.messageTimes.push(now);
 
                 if (isBinary) {
                     if (client.protocolMode !== "binary") {

@@ -62,12 +62,12 @@ export function createLoop({
 
         accumulator += deltaSeconds;
 
-        while (accumulator >= fixedDt) {
-            update(fixedDt);
+        while (accumulator + fixedDt * 1e-9 >= fixedDt) {
+    update(fixedDt);
 
-            accumulator -= fixedDt;
-            steps += 1;
-        }
+    accumulator = Math.max(0, accumulator - fixedDt);
+    steps += 1;
+}
 
         const alpha = accumulator / fixedDt;
 

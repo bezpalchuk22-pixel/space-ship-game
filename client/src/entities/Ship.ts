@@ -1,7 +1,6 @@
 
 import { Entity } from "./Entity.ts";
 import { Vector2 } from "./Vector2.ts";
-import { Bullet } from "./Bullet.ts";
 
 interface ShipNetworkState {
     readonly id: string;
@@ -21,7 +20,7 @@ interface NetworkSnapshot {
 interface ShipWorld {
     readonly width: number;
     readonly height: number;
-    spawn(entity: Bullet): void;
+    spawnBullet(position: Vector2, velocity: Vector2, ownerId: number | string, homing?: boolean): void;
 }
 
 export class Ship extends Entity {
@@ -305,13 +304,11 @@ export class Ship extends Entity {
             direction.multiply(this.radius + 5)
         );
 
-        world.spawn(
-            new Bullet(
-                nose,
-                direction.multiply(420),
-                this.id,
-                homing
-            )
+        world.spawnBullet(
+            nose,
+            direction.multiply(420),
+            this.id,
+            homing
         );
     }
 

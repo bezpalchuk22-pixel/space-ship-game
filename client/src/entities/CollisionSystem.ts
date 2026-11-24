@@ -1,10 +1,8 @@
 import type { Entity } from "./Entity.ts";
-import type { Ship } from "./Ship.ts";
 import type { Bullet } from "./Bullet.ts";
 import type { Asteroid } from "./Asteroid.ts";
 import type { Pickup } from "./Pickup.ts";
 import { Vector2 } from "./Vector2.ts";
-import type { AsteroidWorld } from "./Asteroid.ts";
 
 interface CollisionWorld {
     readonly width: number;
@@ -74,9 +72,10 @@ export class CollisionSystem {
 
                 const dx = a.position.x - b.position.x;
                 const dy = a.position.y - b.position.y;
-                const distance = Math.hypot(dx, dy);
+                const radius = a.radius + b.radius;
+                const distanceSquared = dx * dx + dy * dy;
 
-                if (distance <= a.radius + b.radius) {
+                if (distanceSquared <= radius * radius) {
                     this.resolve(world, a, b);
                 }
             }

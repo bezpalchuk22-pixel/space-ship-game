@@ -18,7 +18,6 @@ import {
 } from "../../../shared/Types.ts";
 
 import type {
-    PlayerId,
     GameSnapshot,
     ShipInput
 } from "../../../shared/Types.ts";
@@ -50,6 +49,8 @@ export class World {
     readonly height: number;
 
     entities = new Map<number, Entity>();
+    private bulletPool: Bullet[] = [];
+    private particlePool: Particle[] = [];
     collisionSystem = new CollisionSystem();
 
     score = 0;
@@ -81,6 +82,35 @@ export class World {
         return entity;
     }
 
+    spawnBullet(
+        position: Vector2,
+        velocity: Vector2,
+        ownerId: number | string,
+        homing = false
+    ): Bullet {
+        const bullet = this.bulletPool.pop();
+
+        if (bullet) {
+            bullet.reset(position, velocity, ownerId, homing);
+        } else {
+            return this.spawn(new Bullet(position, velocity, ownerId, homing));
+        }
+
+        return this.spawn(bullet);
+    }
+
+    private spawnParticle(position: Vector2): Particle {
+        const particle = this.particlePool.pop();
+
+        if (particle) {
+            particle.reset(position);
+        } else {
+            return this.spawn(new Particle(position));
+        }
+
+        return this.spawn(particle);
+    }
+
     despawn(entity: Entity): void {
         entity.destroy();
     }
@@ -95,7 +125,7 @@ export class World {
 
     explode(position: Vector2, count = 12): void {
         for (let i = 0; i < count; i++) {
-            this.spawn(new Particle(position));
+            this.spawnParticle(position);
         }
     }
 
@@ -187,7 +217,7 @@ export class World {
         let previousLocalPosition: Vector2 | null = null;
         let previousLocalAngle: number | null = null;
 
-        // Синхронізація кораблів гравців.
+        // РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ РєРѕСЂР°Р±Р»С–РІ РіСЂР°РІС†С–РІ.
         for (const state of snapshot.players) {
             if (
                 !state.id ||
@@ -239,7 +269,7 @@ export class World {
             }
         }
 
-        // Видалення кораблів, яких більше немає на сервері.
+        // Р’РёРґР°Р»РµРЅРЅСЏ РєРѕСЂР°Р±Р»С–РІ, СЏРєРёС… Р±С–Р»СЊС€Рµ РЅРµРјР°С” РЅР° СЃРµСЂРІРµСЂС–.
         for (const [id, ship] of this.networkShips) {
             if (!activeShipIds.has(id)) {
                 ship.destroy();
@@ -251,7 +281,7 @@ export class World {
             }
         }
 
-        // Узгодження локального прогнозу із серверним станом.
+        // РЈР·РіРѕРґР¶РµРЅРЅСЏ Р»РѕРєР°Р»СЊРЅРѕРіРѕ РїСЂРѕРіРЅРѕР·Сѓ С–Р· СЃРµСЂРІРµСЂРЅРёРј СЃС‚Р°РЅРѕРј.
         if (localShip && localServerState) {
             const acknowledgedSeq = localServerState.seq;
 
@@ -264,7 +294,7 @@ export class World {
             predicted.angle = localServerState.angle;
             predicted.hp = localServerState.hp;
 
-            // Повторно застосовуємо непідтверджені команди.
+            // РџРѕРІС‚РѕСЂРЅРѕ Р·Р°СЃС‚РѕСЃРѕРІСѓС”РјРѕ РЅРµРїС–РґС‚РІРµСЂРґР¶РµРЅС– РєРѕРјР°РЅРґРё.
             const unacknowledgedInputs = pendingInputs
                 .filter(input => input.seq > acknowledgedSeq)
                 .sort((a, b) => a.seq - b.seq);
@@ -289,7 +319,7 @@ export class World {
 
             localShip.angle = predicted.angle;
 
-            // Згладжування різниці між прогнозом і сервером.
+            // Р—РіР»Р°РґР¶СѓРІР°РЅРЅСЏ СЂС–Р·РЅРёС†С– РјС–Р¶ РїСЂРѕРіРЅРѕР·РѕРј С– СЃРµСЂРІРµСЂРѕРј.
             if (previousLocalPosition) {
                 let offsetX =
                     previousLocalPosition.x - predicted.x;
@@ -336,7 +366,7 @@ export class World {
             }
         }
 
-        // Синхронізація астероїдів.
+        // РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р°СЃС‚РµСЂРѕС—РґС–РІ.
         const activeEntityIds = new Set<string>();
 
         for (const state of snapshot.asteroids) {
@@ -373,7 +403,7 @@ export class World {
             entity.radius = state.radius;
         }
 
-        // Синхронізація аптечок.
+        // РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ Р°РїС‚РµС‡РѕРє.
         for (const state of snapshot.pickups) {
             if (
                 !state.id ||
@@ -406,7 +436,7 @@ export class World {
             entity.radius = state.radius;
         }
 
-        // Синхронізація куль.
+        // РЎРёРЅС…СЂРѕРЅС–Р·Р°С†С–СЏ РєСѓР»СЊ.
         for (const state of snapshot.bullets) {
             if (
                 !state.id ||
@@ -440,7 +470,7 @@ export class World {
             entity.position = new Vector2(state.x, state.y);
         }
 
-        // Видалення об'єктів, яких більше немає на сервері.
+        // Р’РёРґР°Р»РµРЅРЅСЏ РѕР±'С”РєС‚С–РІ, СЏРєРёС… Р±С–Р»СЊС€Рµ РЅРµРјР°С” РЅР° СЃРµСЂРІРµСЂС–.
         for (const [id, entity] of this.networkEntities) {
             if (!activeEntityIds.has(id)) {
                 entity.destroy();
@@ -448,7 +478,7 @@ export class World {
             }
         }
 
-        // Очищення знищених об'єктів.
+        // РћС‡РёС‰РµРЅРЅСЏ Р·РЅРёС‰РµРЅРёС… РѕР±'С”РєС‚С–РІ.
         for (const [id, entity] of this.entities) {
             if (entity.dead) {
                 this.entities.delete(id);
@@ -457,7 +487,7 @@ export class World {
     }
 
     step(dt: number): void {
-        // Відродження гравця в одиночному режимі.
+        // Р’С–РґСЂРѕРґР¶РµРЅРЅСЏ РіСЂР°РІС†СЏ РІ РѕРґРёРЅРѕС‡РЅРѕРјСѓ СЂРµР¶РёРјС–.
         if (!this.networkMode) {
             if (this.player?.dead && this.respawnTimer <= 0) {
                 this.respawnTimer = 2;
@@ -489,7 +519,7 @@ export class World {
                 continue;
             }
 
-            // Інтерполяція мережевих кораблів.
+            // Р†РЅС‚РµСЂРїРѕР»СЏС†С–СЏ РјРµСЂРµР¶РµРІРёС… РєРѕСЂР°Р±Р»С–РІ.
             if (
                 this.networkMode &&
                 entity instanceof Ship &&
@@ -510,7 +540,7 @@ export class World {
                 }
             }
 
-            // Мережеві об'єкти оновлюються сервером.
+            // РњРµСЂРµР¶РµРІС– РѕР±'С”РєС‚Рё РѕРЅРѕРІР»СЋСЋС‚СЊСЃСЏ СЃРµСЂРІРµСЂРѕРј.
             if (
                 this.networkMode &&
                 isNetworkControlled(entity) &&
@@ -522,15 +552,29 @@ export class World {
             entity.update(dt, this);
         }
 
-        // Локальні зіткнення не змінюють серверний стан.
+        // Р›РѕРєР°Р»СЊРЅС– Р·С–С‚РєРЅРµРЅРЅСЏ РЅРµ Р·РјС–РЅСЋСЋС‚СЊ СЃРµСЂРІРµСЂРЅРёР№ СЃС‚Р°РЅ.
         if (!this.networkMode) {
             this.collisionSystem.check(this);
         }
 
-        // Видалення знищених об'єктів.
+        // Видалення знищених об'єктів і повернення локальних у пули.
         for (const [id, entity] of this.entities) {
-            if (entity.dead) {
-                this.entities.delete(id);
+            if (!entity.dead) continue;
+
+            this.entities.delete(id);
+
+            if (
+                entity instanceof Bullet &&
+                !isNetworkControlled(entity) &&
+                !("networkId" in entity) &&
+                this.bulletPool.length < 500
+            ) {
+                this.bulletPool.push(entity);
+            } else if (
+                entity instanceof Particle &&
+                this.particlePool.length < 1000
+            ) {
+                this.particlePool.push(entity);
             }
         }
     }

@@ -1,5 +1,4 @@
-
-import { Entity } from "./Entity.ts";
+﻿import { Entity } from "./Entity.ts";
 import { Vector2 } from "./Vector2.ts";
 
 export class Particle extends Entity {
@@ -7,18 +6,27 @@ export class Particle extends Entity {
     maxTtl: number;
 
     constructor(position: Vector2) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 35 + Math.random() * 130;
-
         super({
             position: new Vector2(position.x, position.y),
-            velocity: Vector2.fromAngle(angle, speed),
+            velocity: new Vector2(),
             radius: 2,
             kind: "particle"
         });
 
+        this.ttl = 0;
+        this.maxTtl = 1;
+        this.reset(position);
+    }
+
+    reset(position: Vector2): void {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 35 + Math.random() * 130;
+
+        this.position = new Vector2(position.x, position.y);
+        this.velocity = Vector2.fromAngle(angle, speed);
         this.ttl = 0.45 + Math.random() * 0.55;
         this.maxTtl = this.ttl;
+        this.dead = false;
     }
 
     override update(dt: number): void {

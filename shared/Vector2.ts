@@ -31,15 +31,22 @@ export class Vector2 {
     }
 
     normalize(): Vector2 {
-        const len = this.length;
+        const scale = Math.max(
+            Math.abs(this.x),
+            Math.abs(this.y)
+        );
 
-        if (len === 0) {
+        if (scale === 0) {
             return new Vector2(0, 0);
         }
 
+        const scaledX = this.x / scale;
+        const scaledY = this.y / scale;
+        const length = Math.hypot(scaledX, scaledY);
+
         return new Vector2(
-            this.x / len,
-            this.y / len
+            scaledX / length,
+            scaledY / length
         );
     }
 

@@ -1,4 +1,4 @@
-﻿import "./style.css";
+import "./style.css";
 
 import { World } from "./entities/World.ts";
 import { Lobby } from "./lobby/Lobby.ts";
@@ -18,11 +18,6 @@ interface JoinDetail {
         readonly id: string | number;
         readonly name: string;
     };
-}
-
-interface NetworkMessage {
-    readonly type: string;
-    readonly [key: string]: unknown;
 }
 
 interface NetworkStats {
@@ -85,12 +80,6 @@ function isNetworkStats(value: unknown): value is NetworkStats {
         typeof value.ackSeq === "number" &&
         typeof value.seq === "number"
     );
-}
-
-function getErrorMessage(error: unknown): string {
-    return error instanceof Error
-        ? error.message
-        : String(error);
 }
 
 function getElement<T extends HTMLElement>(
@@ -527,7 +516,8 @@ function stopGame(): void {
 function startGame(
     roomId: string,
     roomName: string,
-    playerName: string
+    playerName: string,
+    protocolMode: "json" | "binary"
 ): void {
     if (gameRunning) {
         stopGame();
@@ -554,6 +544,7 @@ function startGame(
     input = createInput();
 
     network = new NetworkGame();
+    network.setProtocolMode(protocolMode);
 
     network.addEventListener("open", () => {
         connectionLabel.textContent = "Підключено";
@@ -681,10 +672,17 @@ lobby.addEventListener("join", event => {
         return;
     }
 
+    const protocolSelect =
+        document.querySelector<HTMLSelectElement>("#lobby-protocol");
+
+    const protocolMode =
+        protocolSelect?.value === "json" ? "json" : "binary";
+
     startGame(
         String(detail.room.id),
         detail.room.name,
-        detail.playerName
+        detail.playerName,
+        protocolMode
     );
 });
 

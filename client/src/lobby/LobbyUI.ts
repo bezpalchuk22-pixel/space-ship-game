@@ -19,10 +19,6 @@ interface CreateRoomResponse {
     readonly room: LobbyRoom;
 }
 
-interface CreateRoomError {
-    readonly error?: string;
-}
-
 function requiredElement<T extends Element>(
     element: T | null,
     selector: string

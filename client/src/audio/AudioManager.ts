@@ -9,7 +9,6 @@ declare global {
 
 export type AudioResourceMap = Readonly<Record<string, ArrayBuffer>>;
 
-type AudioEventName = "fired" | "hit" | "exploded";
 
 export class AudioManager {
     private context: AudioContext | null = null;

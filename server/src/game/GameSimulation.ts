@@ -16,7 +16,6 @@ import {
 import type {
     PlayerId,
     EntityId,
-    Tick,
     SequenceNumber,
     ShipInput,
     GameSnapshot,

@@ -1,5 +1,4 @@
-﻿
-import { Vector2 } from "./Vector2.ts";
+﻿import { Vector2 } from "./Vector2.ts";
 
 export interface EntityOptions {
     position?: Vector2;
@@ -33,8 +32,11 @@ export class Entity {
     }
 
     update(dt: number, _world?: unknown): void {
-        this.position = this.position.add(
-            this.velocity.multiply(dt)
+        void _world;
+
+        this.position = new Vector2(
+            this.position.x + this.velocity.x * dt,
+            this.position.y + this.velocity.y * dt
         );
     }
 
@@ -42,4 +44,3 @@ export class Entity {
         this.dead = true;
     }
 }
-

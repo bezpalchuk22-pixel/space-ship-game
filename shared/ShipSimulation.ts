@@ -76,8 +76,8 @@ export function stepShip(
     ship.x += ship.vx * dt;
     ship.y += ship.vy * dt;
 
-    ship.x = (ship.x + worldWidth) % worldWidth;
-    ship.y = (ship.y + worldHeight) % worldHeight;
+    ship.x = ((ship.x % worldWidth) + worldWidth) % worldWidth;
+    ship.y = ((ship.y % worldHeight) + worldHeight) % worldHeight;
 
     ship.cooldown = Math.max(0, ship.cooldown - dt);
 }
