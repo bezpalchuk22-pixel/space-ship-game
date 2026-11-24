@@ -652,8 +652,18 @@ function startGame(
         }
     });
 
+    network.addEventListener("shutdown", () => {
+        stopGame();
+        addChatMessage("Сервер завершує роботу. Ви повернулися до лобі.");
+    });
+
     network.addEventListener("close", () => {
         connectionLabel.textContent = "Відключено";
+
+        if (gameRunning) {
+            stopGame();
+            addChatMessage("З'єднання із сервером втрачено. Ви повернулися до лобі.");
+        }
     });
 
     network.connect();

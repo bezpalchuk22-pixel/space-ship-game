@@ -1,5 +1,4 @@
-
-import {
+﻿import {
     createShipState,
     applyShipInput,
     stepShip,
@@ -35,6 +34,8 @@ import type { InputPacket } from "../../../shared/BinaryProtocol.js";
 
 const TICK_RATE = 30;
 const FIXED_DT = 1 / TICK_RATE;
+const TICK_INTERVAL_MS = FIXED_DT * 1000;
+const MAX_CATCH_UP_TICKS = 5;
 
 const WORLD_WIDTH = 1200;
 const WORLD_HEIGHT = 800;
@@ -98,6 +99,8 @@ export class GameSimulation {
     readonly bullets = new Map<EntityId, Bullet>();
 
     tick = 0;
+    lastTickDurationMs = 0;
+
     private nextEntityId = 1;
 
     private readonly random: () => number;
@@ -108,10 +111,8 @@ export class GameSimulation {
 
     constructor(roomId: string) {
         this.roomId = roomId;
-
         this.random = createSeededRandom(hashSeed(roomId));
 
-        // Початкові метеорити.
         for (let i = 0; i < 8; i++) {
             this.spawnAsteroid();
         }
@@ -299,12 +300,7 @@ export class GameSimulation {
 
             const ship = player.ship;
 
-            stepShip(
-                ship,
-                FIXED_DT,
-                WORLD_WIDTH,
-                WORLD_HEIGHT
-            );
+            stepShip(ship, FIXED_DT, WORLD_WIDTH, WORLD_HEIGHT);
 
             if (ship.shoot && ship.cooldown <= 0 && ship.hp > 0) {
                 this.spawnBullet(ship);
@@ -349,7 +345,6 @@ export class GameSimulation {
     }
 
     private checkCollisions(): void {
-        // Кулі проти метеоритів і кораблів.
         for (const bullet of [...this.bullets.values()]) {
             if (!this.bullets.has(bullet.id)) continue;
 
@@ -387,7 +382,6 @@ export class GameSimulation {
             }
         }
 
-        // Кораблі проти метеоритів.
         for (const player of this.players.values()) {
             const ship = player.ship;
 
@@ -404,7 +398,6 @@ export class GameSimulation {
             }
         }
 
-        // Підбір аптечок.
         for (const player of this.players.values()) {
             const ship = player.ship;
 
@@ -423,31 +416,31 @@ export class GameSimulation {
     }
 
     step(): void {
+        const startTime = performance.now();
+
         this.updatePlayers();
         this.updateAsteroids();
         this.updateBullets();
-
         this.checkCollisions();
 
         if (
             this.tick > 0 &&
-            this.tick % ASTEROID_SPAWN_TICKS === 0
+            this.tick % ASTEROID_SPAWN_TICKS === 0 &&
+            this.asteroids.size < 20
         ) {
-            if (this.asteroids.size < 20) {
-                this.spawnAsteroid();
-            }
+            this.spawnAsteroid();
         }
 
         if (
             this.tick > 0 &&
-            this.tick % PICKUP_SPAWN_TICKS === 0
+            this.tick % PICKUP_SPAWN_TICKS === 0 &&
+            this.pickups.size < 5
         ) {
-            if (this.pickups.size < 5) {
-                this.spawnPickup();
-            }
+            this.spawnPickup();
         }
 
         this.tick++;
+        this.lastTickDurationMs = performance.now() - startTime;
     }
 
     createSnapshot(): GameSnapshot {
@@ -514,21 +507,41 @@ export class GameSimulation {
         const loop = (): void => {
             if (!this.running) return;
 
-            const now = performance.now();
+            try {
+                const now = performance.now();
+                let ticks = 0;
 
-            while (now >= this.nextTickTime) {
-                this.step();
-                this.nextTickTime += FIXED_DT * 1000;
+                while (
+                    now >= this.nextTickTime &&
+                    ticks < MAX_CATCH_UP_TICKS
+                ) {
+                    this.step();
+                    this.nextTickTime += TICK_INTERVAL_MS;
+                    ticks++;
+                }
+
+                // Не дозволяємо необмеженому накопиченню tick
+                // блокувати event loop після тривалої затримки.
+                if (now >= this.nextTickTime) {
+                    this.nextTickTime = now + TICK_INTERVAL_MS;
+                }
+
+                broadcast(this.createSnapshot());
+            } catch (error) {
+                console.error(
+                    `[GameSimulation:${this.roomId}] Помилка циклу:`,
+                    error
+                );
+            } finally {
+                if (this.running) {
+                    const delay = Math.max(
+                        0,
+                        this.nextTickTime - performance.now()
+                    );
+
+                    this.timer = setTimeout(loop, delay);
+                }
             }
-
-            broadcast(this.createSnapshot());
-
-            const delay = Math.max(
-                0,
-                this.nextTickTime - performance.now()
-            );
-
-            this.timer = setTimeout(loop, delay);
         };
 
         loop();

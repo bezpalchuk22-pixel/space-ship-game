@@ -1,13 +1,35 @@
-﻿import type { IncomingMessage, ServerResponse } from "node:http";
+﻿
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { Room } from "../rooms/Room.js";
+import { config } from "../config.js";
 
 export const rooms = new Map([
-    new Room({ id: "room-1", name: "Космічна битва" }),
-    new Room({ id: "room-2", name: "Галактична арена" }),
-    new Room({ id: "room-3", name: "Орбіта перемоги" }),
-    new Room({ id: "room-4", name: "Зоряний флот" }),
-    new Room({ id: "room-5", name: "Туманність" })
+    new Room({
+        id: "room-1",
+        name: "Космічна битва",
+        maxPlayers: config.maxPlayersPerRoom
+    }),
+    new Room({
+        id: "room-2",
+        name: "Галактична арена",
+        maxPlayers: config.maxPlayersPerRoom
+    }),
+    new Room({
+        id: "room-3",
+        name: "Орбіта перемоги",
+        maxPlayers: config.maxPlayersPerRoom
+    }),
+    new Room({
+        id: "room-4",
+        name: "Зоряний флот",
+        maxPlayers: config.maxPlayersPerRoom
+    }),
+    new Room({
+        id: "room-5",
+        name: "Туманність",
+        maxPlayers: config.maxPlayersPerRoom
+    })
 ].map(room => [room.id, room]));
 
 let nextRoomId = 6;
@@ -70,11 +92,41 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
     }
 }
 
+export interface ServerMetrics {
+    players: number;
+    rooms: number;
+    messagesPerSecond: number;
+    bytesPerSecond: number;
+    tickDurationMs: number;
+    eventLoopUtilization: number;
+    memoryUsageBytes: number;
+    uptimeSeconds: number;
+}
+
 export async function handleApi(
     req: IncomingMessage,
-    res: ServerResponse
+    res: ServerResponse,
+    isReady = true,
+    getMetrics?: () => ServerMetrics
 ): Promise<void> {
     const url = new URL(req.url ?? "/", "http://localhost");
+
+    if (req.method === "GET" && url.pathname === "/ready") {
+        sendJson(res, isReady ? 200 : 503, {
+            status: isReady ? "ready" : "not_ready"
+        });
+        return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/metrics") {
+        if (!getMetrics) {
+            sendJson(res, 503, { error: "Metrics unavailable" });
+            return;
+        }
+
+        sendJson(res, 200, getMetrics());
+        return;
+    }
 
     if (req.method === "GET" && url.pathname === "/health") {
         sendJson(res, 200, { status: "ok" });
@@ -100,9 +152,17 @@ export async function handleApi(
                 return;
             }
 
+            if (rooms.size >= config.maxRooms) {
+                sendJson(res, 503, {
+                    error: "Досягнуто максимальної кількості кімнат."
+                });
+                return;
+            }
+
             const room = new Room({
                 id: `room-${nextRoomId++}`,
-                name: result.data.name
+                name: result.data.name,
+                maxPlayers: config.maxPlayersPerRoom
             });
 
             rooms.set(room.id, room);

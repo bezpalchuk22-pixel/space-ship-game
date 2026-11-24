@@ -1,4 +1,4 @@
-﻿import { spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import { WebSocket } from "ws";
 
@@ -6,7 +6,7 @@ const PORT = 3107;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const WS_URL = `ws://127.0.0.1:${PORT}/ws`;
 
-const CLIENT_COUNTS = [8, 32, 64, 128];
+const CLIENT_COUNTS = [8, 16, 32, 64];
 const WARMUP_MS = 2000;
 const MEASURE_MS = 10000;
 const INPUT_INTERVAL_MS = 1000 / 30;
@@ -79,7 +79,9 @@ async function createRooms(count: number): Promise<string[]> {
         });
 
         if (!response.ok) {
-            throw new Error(`Не вдалося створити кімнату: ${response.status}`);
+            throw new Error(
+                `Не вдалося створити кімнату ${i + 1}: ${response.status}`
+            );
         }
 
         const result = await response.json() as {
@@ -97,8 +99,9 @@ function connectClient(
     index: number
 ): Promise<ClientMetrics> {
     return new Promise((resolve, reject) => {
-        const socket = new WebSocket(WS_URL);
-
+        const socket = new WebSocket(WS_URL, {
+            origin: `http://127.0.0.1:${PORT}`
+        });
         const metrics: ClientMetrics = {
             socket,
             roomId,
@@ -131,7 +134,7 @@ function connectClient(
             socket.send(message);
         });
 
-        socket.on("message", (data) => {
+        socket.on("message", data => {
             const buffer = Buffer.isBuffer(data)
                 ? data
                 : Array.isArray(data)
@@ -179,10 +182,30 @@ function connectClient(
         socket.on("close", () => {
             if (!joined) {
                 clearTimeout(timeout);
-                reject(new Error(`Клієнт ${index}: з'єднання закрито до join.`));
+                reject(
+                    new Error(`Клієнт ${index}: з'єднання закрито до join.`)
+                );
             }
         });
     });
+}
+
+async function closeClients(clients: ClientMetrics[]): Promise<void> {
+    for (const client of clients) {
+        if (client.socket.readyState === WebSocket.OPEN) {
+            client.socket.close(1000, "Load test complete");
+        }
+    }
+
+    await delay(500);
+
+    for (const client of clients) {
+        if (client.socket.readyState !== WebSocket.CLOSED) {
+            client.socket.terminate();
+        }
+    }
+
+    await delay(250);
 }
 
 async function runScenario(clientCount: number): Promise<void> {
@@ -192,6 +215,7 @@ async function runScenario(clientCount: number): Promise<void> {
     const roomIds = await createRooms(roomCount);
 
     const clients: ClientMetrics[] = [];
+    let trafficTimer: ReturnType<typeof setInterval> | null = null;
 
     try {
         const connections = Array.from(
@@ -209,7 +233,7 @@ async function runScenario(clientCount: number): Promise<void> {
 
         let pingId = 0;
 
-        const trafficTimer = setInterval(() => {
+        trafficTimer = setInterval(() => {
             for (const client of clients) {
                 if (client.socket.readyState !== WebSocket.OPEN) {
                     continue;
@@ -261,16 +285,20 @@ async function runScenario(clientCount: number): Promise<void> {
         const elapsedSeconds = (performance.now() - startedAt) / 1000;
 
         clearInterval(trafficTimer);
+        trafficTimer = null;
 
         const allRtts = clients.flatMap(client => client.rtts);
+
         const totalSnapshots = clients.reduce(
             (sum, client) => sum + client.snapshots,
             0
         );
+
         const totalReceived = clients.reduce(
             (sum, client) => sum + client.receivedBytes,
             0
         );
+
         const totalSent = clients.reduce(
             (sum, client) => sum + client.sentBytes,
             0
@@ -278,36 +306,30 @@ async function runScenario(clientCount: number): Promise<void> {
 
         console.log(`Тривалість: ${elapsedSeconds.toFixed(2)} с`);
         console.log(`Отримано snapshot: ${totalSnapshots}`);
+
         console.log(
             `Snapshot на клієнта: ${(totalSnapshots / clientCount / elapsedSeconds).toFixed(2)} / с`
         );
+
         console.log(`RTT вимірювань: ${allRtts.length}`);
         console.log(`RTT average: ${average(allRtts).toFixed(2)} ms`);
         console.log(`RTT p50: ${percentile(allRtts, 0.50).toFixed(2)} ms`);
         console.log(`RTT p95: ${percentile(allRtts, 0.95).toFixed(2)} ms`);
         console.log(`RTT p99: ${percentile(allRtts, 0.99).toFixed(2)} ms`);
+
         console.log(
             `Вхідний трафік: ${(totalReceived / elapsedSeconds / 1024).toFixed(2)} KB/s`
         );
+
         console.log(
             `Вихідний трафік: ${(totalSent / elapsedSeconds / 1024).toFixed(2)} KB/s`
         );
     } finally {
-        for (const client of clients) {
-            if (client.socket.readyState === WebSocket.OPEN) {
-                client.socket.close(1000, "Load test complete");
-            }
+        if (trafficTimer !== null) {
+            clearInterval(trafficTimer);
         }
 
-        await delay(500);
-
-        for (const client of clients) {
-            if (client.socket.readyState !== WebSocket.CLOSED) {
-                client.socket.terminate();
-            }
-        }
-
-        await delay(500);
+        await closeClients(clients);
     }
 }
 
@@ -318,9 +340,12 @@ async function main(): Promise<void> {
         {
             env: {
                 ...process.env,
-                PORT: String(PORT)
+                PORT: String(PORT),
+                ALLOWED_ORIGINS: `http://127.0.0.1:${PORT}`,
+                MAX_CONNECTIONS_PER_IP: "100",
+                MAX_ROOMS: "100"
             },
-            stdio: "ignore"
+            stdio: "inherit"
         }
     );
 
@@ -335,6 +360,17 @@ async function main(): Promise<void> {
     } finally {
         if (server.exitCode === null) {
             server.kill("SIGTERM");
+
+            await Promise.race([
+                new Promise<void>(resolve => {
+                    server.once("exit", () => resolve());
+                }),
+                delay(5000)
+            ]);
+
+            if (server.exitCode === null) {
+                server.kill("SIGKILL");
+            }
         }
     }
 }

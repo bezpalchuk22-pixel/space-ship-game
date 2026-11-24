@@ -5,10 +5,13 @@ import { handleApi, rooms } from "./http/routes.js";
 import { attachWebSocket } from "./websocket.js";
 import { createMatchLogger } from "./logging.js";
 import { serveStatic } from "./http/static.js";
-
+import { performance } from "node:perf_hooks";
 await mkdir(config.logDir, { recursive: true });
 
 const matchLogger = createMatchLogger(config.logDir);
+const startTime = performance.now();
+const initialEventLoopUtilization = performance.eventLoopUtilization();
+let isReady = false;
 
 const server = http.createServer(async (request, response) => {
     try {
@@ -17,8 +20,18 @@ const server = http.createServer(async (request, response) => {
             "http://localhost"
         ).pathname;
 
-        if (pathname === "/health" || pathname.startsWith("/api/")) {
-            await handleApi(request, response);
+        if (
+    pathname === "/health" ||
+    pathname === "/ready" ||
+    pathname === "/metrics" ||
+    pathname.startsWith("/api/")
+) {
+            await handleApi(
+    request,
+    response,
+    isReady && !shuttingDown,
+    getMetrics
+);
         } else {
             await serveStatic(request, response);
         }
@@ -48,6 +61,24 @@ const websocket = attachWebSocket(
         }
     }
 );
+isReady = true;
+
+function getMetrics() {
+    const wsStats = websocket.getStats();
+
+    const eventLoop = performance.eventLoopUtilization(
+        initialEventLoopUtilization
+    );
+
+    return {
+        ...wsStats,
+        eventLoopUtilization: Number(eventLoop.utilization.toFixed(4)),
+        memoryUsageBytes: process.memoryUsage().heapUsed,
+        uptimeSeconds: Number(
+            ((performance.now() - startTime) / 1000).toFixed(1)
+        )
+    };
+}
 
 let shuttingDown = false;
 

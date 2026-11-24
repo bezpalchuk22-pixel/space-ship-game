@@ -383,6 +383,15 @@ export class NetworkGame extends EventTarget {
 
             return;
         }
+        if (message.type === "shutdown") {
+            this.dispatchEvent(
+                new CustomEvent("shutdown", {
+                    detail: message
+                })
+            );
+
+            return;
+        }
 
         if (message.type === "snapshot") {
             if (isGameSnapshot(message)) {

@@ -1,13 +1,11 @@
 ﻿import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { pipeline } from "node:stream/promises";
 
-const root = path.resolve(
-    fileURLToPath(new URL("../../../client/dist/", import.meta.url))
-);
+const root = path.resolve(process.cwd(), "client/dist");
 
 const mimeTypes: Readonly<Record<string, string>> = {
     ".html": "text/html; charset=utf-8",

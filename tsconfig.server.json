@@ -1,0 +1,22 @@
+﻿{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": ".",
+    "outDir": "./dist",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "shared/**/*.ts",
+    "server/src/**/*.ts"
+  ],
+  "exclude": [
+  "node_modules",
+  "client/dist",
+  "server/src/**/__tests__/**",
+  "server/src/bench/**",
+  "shared/**/__tests__/**",
+  "shared/**/*.test.ts"
+]
+}

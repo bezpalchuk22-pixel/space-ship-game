@@ -26,7 +26,8 @@ export default defineConfig({
         url: "http://127.0.0.1:3101/health",
         env: {
             PORT: "3101",
-            LOG_DIR: "./logs/e2e"
+            LOG_DIR: "./logs/e2e",
+            ALLOWED_ORIGINS: "http://127.0.0.1:3101"
         },
         timeout: 120_000,
         reuseExistingServer: false

@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "npm run dev --workspace=@space-ship/client",
     "build": "npm run build --workspace=@space-ship/client",
-    "start": "npm run start --workspace=@space-ship/server",
+    "build:server": "tsc -p tsconfig.server.json",
+    "start": "node dist/server/src/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

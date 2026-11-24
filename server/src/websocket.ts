@@ -4,7 +4,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { RawData } from "ws";
 import { randomUUID } from "node:crypto";
 import { Room } from "./rooms/Room.js";
-
+import { config } from "./config.js";
+import type { IncomingMessage } from "node:http";
 import {
     decodeInput,
     encodeSnapshot
@@ -99,11 +100,46 @@ export function attachWebSocket(
     rooms: RoomsMap,
     logMessage: LogMessage = () => { }
 ) {
-    const wss = new WebSocketServer({
-        server,
-        path: "/ws",
-        maxPayload: MAX_MESSAGE_SIZE
-    });
+    const trafficSamples: Array<{
+        time: number;
+        bytes: number;
+    }> = [];
+    const connectionsPerIp = new Map<string, number>();
+    const socketIp = new WeakMap<WebSocket, string>();
+const wss = new WebSocketServer({
+    server,
+    path: "/ws",
+    maxPayload: MAX_MESSAGE_SIZE,
+
+    verifyClient: (info: {
+    origin: string;
+    secure: boolean;
+    req: IncomingMessage;
+}) => {
+    const { origin, req } = info;
+
+
+        const requestOrigin = req.headers.origin || origin;
+        if (
+            !requestOrigin ||
+            !config.allowedOrigins.includes(requestOrigin)
+        ) {
+            console.warn("[WS] Підключення відхилено: заборонений Origin");
+            return false;
+        }
+
+        const ip = req.socket.remoteAddress ?? "unknown";
+        const currentConnections = connectionsPerIp.get(ip) ?? 0;
+
+        if (currentConnections >= config.maxConnectionsPerIp) {
+            console.warn("[WS] Перевищено ліміт підключень з IP:", ip);
+            return false;
+        }
+
+        connectionsPerIp.set(ip, currentConnections + 1);
+        return true;
+    }
+});
 
     wss.on("error", (error: Error) => {
         console.error("[WS] Помилка WebSocket-сервера:", error.message);
@@ -227,8 +263,11 @@ export function attachWebSocket(
         client.roomId = null;
     }
 
-    wss.on("connection", (socket: WebSocket) => {
-        console.log("[WS] Нове підключення");
+    wss.on("connection", (socket: WebSocket, request: IncomingMessage) => {
+    const ip = request.socket.remoteAddress ?? "unknown";
+    socketIp.set(socket, ip);
+
+    console.log("[WS] Нове підключення з IP:", ip);
 
         const client: Client = {
             id: toPlayerId(randomUUID()),
@@ -256,7 +295,19 @@ export function attachWebSocket(
         socket.on("message", (raw: RawData, isBinary: boolean) => {
             try {
                 const payload = rawDataToBuffer(raw);
+                const sampleTime = Date.now();
 
+                trafficSamples.push({
+                    time: sampleTime,
+                    bytes: payload.byteLength
+                });
+
+                while (
+    trafficSamples[0] !== undefined &&
+    sampleTime - trafficSamples[0].time >= 1000
+) {
+                    trafficSamples.shift();
+                }
                 if (payload.byteLength > MAX_MESSAGE_SIZE) {
                     socket.close(1009, "Message too large");
                     return;
@@ -469,6 +520,19 @@ export function attachWebSocket(
         });
 
         socket.on("close", (code, reason) => {
+const ip = socketIp.get(socket);
+
+if (ip) {
+    const count = connectionsPerIp.get(ip) ?? 0;
+
+    if (count <= 1) {
+        connectionsPerIp.delete(ip);
+    } else {
+        connectionsPerIp.set(ip, count - 1);
+    }
+
+    socketIp.delete(socket);
+}
             console.log(
                 "[WS] З'єднання закрито:",
                 code,
@@ -539,10 +603,42 @@ export function attachWebSocket(
         }
     }
 
-    return {
-        wss,
+return {
+    wss,
 
-        close(): void {
+    getStats() {
+        const now = Date.now();
+
+        while (
+            trafficSamples[0] !== undefined &&
+            now - trafficSamples[0].time >= 1000
+        ) {
+            trafficSamples.shift();
+        }
+
+        return {
+            players: Array.from(rooms.values())
+                .reduce((total, room) => total + room.players.size, 0),
+
+            rooms: rooms.size,
+tickDurationMs: simulations.size > 0
+    ? Math.max(
+        ...Array.from(simulations.values()).map(
+            simulation => simulation.lastTickDurationMs
+        )
+    )
+    : 0,
+
+            messagesPerSecond: trafficSamples.length,
+
+            bytesPerSecond: trafficSamples.reduce(
+                (total, sample) => total + sample.bytes,
+                0
+            )
+        };
+    },
+
+    close(): void {
             clearInterval(pingTimer);
 
             for (const simulation of simulations.values()) {
@@ -551,9 +647,14 @@ export function attachWebSocket(
 
             simulations.clear();
 
-            for (const socket of wss.clients) {
-                socket.close(1001, "Server shutting down");
-            }
+        for (const socket of wss.clients) {
+            send(socket, {
+                type: "shutdown",
+                reason: "Server shutting down"
+            });
+
+            socket.close(1001, "Server shutting down");
+        }
 
             wss.close();
         }
